@@ -6,34 +6,35 @@ export class Prism {
         const geometry = new THREE.BufferGeometry();
 
         // Define the vertices for half a cube cut diagonally
+        // Shifted so that the origin is at the center of one square face
         const vertices = new Float32Array([
-            // Front triangle
-            -0.5, -0.5, 0.5,   // bottom left
-            0.5, -0.5, 0.5,    // bottom right
-            -0.5, 0.5, 0.5,    // top left
+            // Front face (now at origin)
+            -0.5, -0.5, 0,    // bottom left
+            0.5, -0.5, 0,     // bottom right
+            -0.5, 0.5, 0,     // top left
 
-            // Back triangle
-            -0.5, -0.5, -0.5,  // bottom left
-            0.5, -0.5, -0.5,   // bottom right
-            -0.5, 0.5, -0.5,   // top left
+            // Back face (now at +1 on z-axis)
+            -0.5, -0.5, 1,    // bottom left
+            0.5, -0.5, 1,     // bottom right
+            -0.5, 0.5, 1,     // top left
 
             // Bottom face
-            -0.5, -0.5, 0.5,   // front left
-            0.5, -0.5, 0.5,    // front right
-            -0.5, -0.5, -0.5,  // back left
-            0.5, -0.5, -0.5,   // back right
+            -0.5, -0.5, 0,    // front left
+            0.5, -0.5, 0,     // front right
+            -0.5, -0.5, 1,    // back left
+            0.5, -0.5, 1,     // back right
 
             // Left face
-            -0.5, -0.5, 0.5,   // bottom front
-            -0.5, 0.5, 0.5,    // top front
-            -0.5, -0.5, -0.5,  // bottom back
-            -0.5, 0.5, -0.5,   // top back
+            -0.5, -0.5, 0,    // bottom front
+            -0.5, 0.5, 0,     // top front
+            -0.5, -0.5, 1,    // bottom back
+            -0.5, 0.5, 1,     // top back
 
             // Diagonal face
-            0.5, -0.5, 0.5,    // bottom front
-            -0.5, 0.5, 0.5,    // top front
-            0.5, -0.5, -0.5,   // bottom back
-            -0.5, 0.5, -0.5    // top back
+            0.5, -0.5, 0,     // bottom front
+            -0.5, 0.5, 0,     // top front
+            0.5, -0.5, 1,     // bottom back
+            -0.5, 0.5, 1      // top back
         ]);
 
         // Define indices to create the triangles
@@ -62,6 +63,7 @@ export class Prism {
         geometry.setAttribute('position', positionAttribute);
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
         geometry.computeVertexNormals();
+        geometry.translate(0, 0.5, -0.5)
 
         const material = new THREE.MeshPhongMaterial({ 
             color: color,
@@ -73,9 +75,28 @@ export class Prism {
 
         // Add black edges
         const edges = new THREE.EdgesGeometry(geometry);
-        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 5 });
         const edgesLines = new THREE.LineSegments(edges, edgesMaterial);
         this.mesh.add(edgesLines);
+
+        // Add colored circles to the center of each rectangular face
+        const circleGeometry = new THREE.SphereGeometry(0.1, 32);
+        const circleMaterials = [
+            new THREE.MeshBasicMaterial({ color: 0xff0000 }), // Front face - red
+            new THREE.MeshBasicMaterial({ color: 0x0000ff }), // Back face - blue
+            new THREE.MeshBasicMaterial({ color: 0xffff00 }), // Bottom face - yellow
+            new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Left face - magenta
+        ];
+
+        // // Bottom face circle
+        // const bottomCircle = new THREE.Mesh(circleGeometry, circleMaterials[2]);
+        // bottomCircle.position.set(-0.5,0.5,0);
+        // this.mesh.add(bottomCircle);
+
+        // // Left face circle
+        // const leftCircle = new THREE.Mesh(circleGeometry, circleMaterials[3]);
+        // leftCircle.position.set(0, 0, 0);
+        // this.mesh.add(leftCircle);
     }
 
     // Method to get the mesh
@@ -93,7 +114,7 @@ export class Prism {
         this.mesh.rotation.set(x, y, z);
     }
 
-    // Method to update rotation
+    // Method to rotate
     rotate(x, y, z) {
         this.mesh.rotation.x += x;
         this.mesh.rotation.y += y;
