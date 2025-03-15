@@ -75,28 +75,9 @@ export class Prism {
 
         // Add black edges
         const edges = new THREE.EdgesGeometry(geometry);
-        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 5 });
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
         const edgesLines = new THREE.LineSegments(edges, edgesMaterial);
         this.mesh.add(edgesLines);
-
-        // Add colored circles to the center of each rectangular face
-        const circleGeometry = new THREE.SphereGeometry(0.1, 32);
-        const circleMaterials = [
-            new THREE.MeshBasicMaterial({ color: 0xff0000 }), // Front face - red
-            new THREE.MeshBasicMaterial({ color: 0x0000ff }), // Back face - blue
-            new THREE.MeshBasicMaterial({ color: 0xffff00 }), // Bottom face - yellow
-            new THREE.MeshBasicMaterial({ color: 0xff00ff }), // Left face - magenta
-        ];
-
-        // // Bottom face circle
-        // const bottomCircle = new THREE.Mesh(circleGeometry, circleMaterials[2]);
-        // bottomCircle.position.set(-0.5,0.5,0);
-        // this.mesh.add(bottomCircle);
-
-        // // Left face circle
-        // const leftCircle = new THREE.Mesh(circleGeometry, circleMaterials[3]);
-        // leftCircle.position.set(0, 0, 0);
-        // this.mesh.add(leftCircle);
     }
 
     // Method to get the mesh
