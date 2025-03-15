@@ -1,11 +1,44 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as dat from 'dat.gui';
+import { MeshBVH, MeshBVHVisualizer, computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
 const PRISM_CENTER = new THREE.Vector3(0, 0.5, 0);
 const FAR_POINT = new THREE.Vector3(-0.5, 0, 0.5);
 const EPSILON = 0.001;
 
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+// Add raycaster for click detection
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Handle mouse click
+function onMouseClick(event) {
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, camera);
+
+    // Get all meshes from the prism chain
+    const meshes = window.prismChain.prisms.map(prism => prism.mesh);
+    
+    // Perform intersection test
+    const intersects = raycaster.intersectObjects(meshes);
+    
+    if (intersects.length > 0) {
+        const clickedMesh = intersects[0].object;
+        const prismIndex = window.prismChain.prisms.findIndex(prism => prism.mesh === clickedMesh);
+        console.log('Clicked on prism index:', prismIndex);
+    }
+}
+
+// Add click event listener
+window.addEventListener('click', onMouseClick);
 
 const gui = new dat.GUI();
 
@@ -18,7 +51,9 @@ window.counter = counter;
 
 const lenController = gui.add({chainLength: 10}, 'chainLength', 1, 50, 1);
 lenController.onChange((v) => spawnChain(v));
+lenController.name('Chain Length');
 
+gui.add({'info': ()=>null}, 'info').name('Press Space to randomize rotations')
 
 const status = gui.add({status: ()=>null}, 'status');
 
@@ -88,12 +123,16 @@ class Prism {
         geometry.computeVertexNormals();
         geometry.translate(0, 0.5, -0.5);
 
+        // Add BVH to the geometry
+        geometry.boundsTree = new MeshBVH(geometry);
+
         let material = new THREE.MeshPhongMaterial({ 
             color: color,
             side: THREE.DoubleSide
         });
 
         this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.geometry.boundsTree = geometry.boundsTree;
 
         const edges = new THREE.EdgesGeometry(geometry);
         const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
@@ -109,6 +148,7 @@ class Prism {
 
     setRotation(x, y, z) {
         this.mesh.rotation.set(x, y, z);
+        this.mesh.geometry
     }
 
     rotate(x, y, z) {
@@ -231,7 +271,7 @@ class PrismChain {
             setStatus('No intersections');
             counter.total += 1.0;
         } else {
-            setStatus(`${intersections.length} intersection${intersections.length > 1 ? 's' : ''} found`);
+            setStatus(`${intersections.length} intersection${intersections.length > 1 ? 's' : ''}`);
             counter.collided += 1.0;
             counter.total += 1.0;
         }
@@ -244,11 +284,17 @@ class PrismChain {
             }
         });
 
+        console.log(this.rotationShifts);   
+
         setStatus('...');
         this.animate();
         setTimeout(() => {
             this.checkSelfIntersection();
         }, 500);
+        // - Do we sleep for 500 milliseconds?
+        // - Yes
+        // - Why do we sleep for 500 milliseconds?
+        // - It doesn't work otherwise (geometry is off) and debugging this is no fun
     }
 
     cleanup() {
@@ -266,7 +312,7 @@ class PrismChain {
 const scene = new THREE.Scene();
 window.scene = scene;
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
 camera.position.z = 8;
 
 const canvas = document.querySelector('#scene');
@@ -284,6 +330,7 @@ const spawnChain = (size) => {
     }
 
     const newChain = new PrismChain(size);
+    newChain.animate()
     window.scene.add(newChain.group);
     window.prismChain = newChain;
     setStatus('line');
@@ -301,10 +348,6 @@ scene.add(pointLight);
 
 function animate() {
     requestAnimationFrame(animate);
-
-    window.prismChain.animate();
-    window.prismChain.rotate(0.001, 0.002, 0);
-
     renderer.render(scene, camera);
 }
 
