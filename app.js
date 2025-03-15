@@ -6,7 +6,7 @@ const PRISM_CENTER = new THREE.Vector3(0, 0.5, 0);
 const FAR_POINT = new THREE.Vector3(-0.5, 0, 0.5);
 const EPSILON = 0.001;
 
-// GUI setup
+
 const gui = new dat.GUI();
 
 const counter = {
@@ -27,7 +27,7 @@ const setStatus = (newStatus) => {
     gui.updateDisplay();
 };
 
-// Prism class definition
+
 class Prism {
     constructor(color = 0x00ff00, index=0) {
         const geometry = new THREE.BufferGeometry();
@@ -132,7 +132,7 @@ class Prism {
     }
 }
 
-// PrismChain class definition
+
 class PrismChain {
     constructor(numPrisms = 5) {
         this.prisms = [];
@@ -262,7 +262,7 @@ class PrismChain {
     }
 }
 
-// Scene setup and main functionality
+
 const scene = new THREE.Scene();
 window.scene = scene;
 
@@ -291,7 +291,7 @@ const spawnChain = (size) => {
 
 spawnChain(36);
 
-// Add lights
+
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
@@ -299,7 +299,6 @@ const pointLight = new THREE.PointLight(0xffffff, 1);
 pointLight.position.set(2, 3, 4);
 scene.add(pointLight);
 
-// Animation loop
 function animate() {
     requestAnimationFrame(animate);
 
