@@ -25,8 +25,8 @@ controls.enableDamping = true
 controls.target.y = 0.5
 
 // Create a prism chain with 7 prisms
-// const prismChain = new PrismChain(18*2);
-const prismChain = new PrismChain(10);
+const prismChain = new PrismChain(18*2);
+// const prismChain = new PrismChain(10);
 scene.add(prismChain.getGroup());
 
 // Add lights

@@ -1,5 +1,15 @@
 import * as THREE from 'three';
 
+import {
+	computeBoundsTree, disposeBoundsTree, acceleratedRaycast
+} from 'three-mesh-bvh';
+
+// Add the extension functions
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+
 export class Prism {
     constructor(color = 0x00ff00) {
         // Create triangular prism geometry
@@ -88,11 +98,13 @@ export class Prism {
     // Method to set position
     setPosition(x, y, z) {
         this.mesh.position.set(x, y, z);
+        this.mesh.geometry.computeBoundsTree();
     }
 
     // Method to set rotation
     setRotation(x, y, z) {
         this.mesh.rotation.set(x, y, z);
+        this.mesh.geometry.computeBoundsTree();
     }
 
     // Method to rotate
@@ -100,5 +112,15 @@ export class Prism {
         this.mesh.rotation.x += x;
         this.mesh.rotation.y += y;
         this.mesh.rotation.z += z;
+    }
+
+    intersects(otherPrism) {
+        console.log(this, otherPrism)
+        window.a = this 
+        window.b = otherPrism
+        // const intersection = self.intersect(other).toMesh()
+        return false
+
+        return intersection.bounding_box().diagonal().length() > 0.01
     }
 } 

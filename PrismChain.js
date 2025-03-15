@@ -1,15 +1,6 @@
 import * as THREE from 'three';
 import { Prism } from './Prism.js';
 
-import {
-	computeBoundsTree, disposeBoundsTree, acceleratedRaycast,
-} from 'three-mesh-bvh';
-
-// Add the extension functions
-THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
 const counter = {
     collided: 0,
     total: 0,
@@ -128,66 +119,10 @@ export class PrismChain {
 
     checkSelfIntersection() {
         const intersections = [];
-        const EPSILON = 0.0001; // Small value for floating point comparison
-        
-        // Create BVH for each prism's mesh
-        this.prisms.forEach(prism => {
-            const mesh = prism.getMesh();
-            if (!mesh.geometry.boundsTree) {
-                mesh.geometry.computeBoundsTree();
-            }
-        });
 
-        // Check each pair of prisms for intersections
         for (let i = 0; i < this.prisms.length; i++) {
-            for (let j = i + 2; j < this.prisms.length; j++) {  // Skip adjacent prisms (i+2)
-                const meshA = this.prisms[i].getMesh();
-                const meshB = this.prisms[j].getMesh();
-
-                // Get world matrices and positions
-                meshA.updateWorldMatrix(true, false);
-                meshB.updateWorldMatrix(true, false);
-
-                // Get world positions of vertices
-                const posA = meshA.geometry.attributes.position;
-                const posB = meshB.geometry.attributes.position;
-                const worldPosA = [];
-                const worldPosB = [];
-                const tempVec = new THREE.Vector3();
-
-                // Convert vertices to world space for comparison
-                for (let k = 0; k < posA.count; k++) {
-                    tempVec.fromBufferAttribute(posA, k);
-                    tempVec.applyMatrix4(meshA.matrixWorld);
-                    worldPosA.push(tempVec.clone());
-                }
-                for (let k = 0; k < posB.count; k++) {
-                    tempVec.fromBufferAttribute(posB, k);
-                    tempVec.applyMatrix4(meshB.matrixWorld);
-                    worldPosB.push(tempVec.clone());
-                }
-
-                // Check if any vertices are at the same position (up to epsilon)
-                let hasMatchingVertices = true;
-                for (const vA of worldPosA) {
-                    for (const vB of worldPosB) {
-                        if (Math.abs(vA.x - vB.x) < EPSILON && 
-                            Math.abs(vA.y - vB.y) < EPSILON && 
-                            Math.abs(vA.z - vB.z) < EPSILON) {
-                            continue;
-                        }
-                        hasMatchingVertices = false;
-                        break;
-                    }
-                    if (hasMatchingVertices) break;
-                }
-
-                // If vertices match or BVH detects intersection
-                if (hasMatchingVertices || meshA.geometry.boundsTree.intersectsGeometry(
-                    meshB.geometry,
-                    meshB.matrixWorld,
-                    meshA.matrixWorld
-                )) {
+            for (let j = i + 2; j < this.prisms.length; j++) {
+                if (this.prisms[i].intersects(this.prisms[j])) {
                     intersections.push([i, j]);
                 }
             }
@@ -219,7 +154,6 @@ export class PrismChain {
             }
         });
         
-        // Update prism positions and check for intersections
         this.animate();
         this.checkSelfIntersection();
     }
