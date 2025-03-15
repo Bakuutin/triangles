@@ -7,6 +7,7 @@ import { PrismChain } from './PrismChain.js';
 
 // Create scene
 const scene = new THREE.Scene();
+window.scene = scene;
 
 // Create camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -25,9 +26,10 @@ controls.enableDamping = true
 controls.target.y = 0.5
 
 // Create a prism chain with 7 prisms
-const prismChain = new PrismChain(18*2);
-// const prismChain = new PrismChain(10);
+// const prismChain = new PrismChain(18*2);
+const prismChain = new PrismChain(10);
 scene.add(prismChain.getGroup());
+window.prismChain = prismChain;
 
 // Add lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);

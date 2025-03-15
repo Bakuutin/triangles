@@ -1,17 +1,11 @@
 import * as THREE from 'three';
 
-import {
-	computeBoundsTree, disposeBoundsTree, acceleratedRaycast
-} from 'three-mesh-bvh';
-
-// Add the extension functions
-THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
+const PRISM_CENTER = new THREE.Vector3(0, 0.5, 0)
+const FAR_POINT = new THREE.Vector3(-0.5, 0, 0.5)
+const EPSILON = 0.001;
 
 export class Prism {
-    constructor(color = 0x00ff00) {
+    constructor(color = 0x00ff00, index=0) {
         // Create triangular prism geometry
         const geometry = new THREE.BufferGeometry();
 
@@ -75,52 +69,58 @@ export class Prism {
         geometry.computeVertexNormals();
         geometry.translate(0, 0.5, -0.5)
 
-        const material = new THREE.MeshPhongMaterial({ 
+        let material = new THREE.MeshPhongMaterial({ 
             color: color,
             side: THREE.DoubleSide
         });
 
         // Create the main mesh
         this.mesh = new THREE.Mesh(geometry, material);
+        // this.mesh = new THREE.Mesh();
 
         // Add black edges
         const edges = new THREE.EdgesGeometry(geometry);
-        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: color, linewidth: 1 });
         const edgesLines = new THREE.LineSegments(edges, edgesMaterial);
         this.mesh.add(edgesLines);
+
+        this.index = index;
+
+        if (false) {
+            // add a small red sphere
+            const center = new THREE.Mesh(new THREE.SphereGeometry(0.1, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            center.geometry.translate(FAR_POINT.x, FAR_POINT.y, FAR_POINT.z)
+            this.mesh.add(center);
+        }
     }
 
-    // Method to get the mesh
-    getMesh() {
-        return this.mesh;
-    }
-
-    // Method to set position
     setPosition(x, y, z) {
         this.mesh.position.set(x, y, z);
-        this.mesh.geometry.computeBoundsTree();
+        // this.mesh.geometry.computeBoundsTree();
     }
 
-    // Method to set rotation
     setRotation(x, y, z) {
         this.mesh.rotation.set(x, y, z);
-        this.mesh.geometry.computeBoundsTree();
+        // this.mesh.geometry.computeBoundsTree();
     }
 
-    // Method to rotate
     rotate(x, y, z) {
         this.mesh.rotation.x += x;
         this.mesh.rotation.y += y;
         this.mesh.rotation.z += z;
     }
 
-    intersects(otherPrism) {
-        console.log(this, otherPrism)
-        window.a = this 
-        window.b = otherPrism
-        // const intersection = self.intersect(other).toMesh()
-        return false
+    intersects(other) {
+        const getDistance = (point) => {
+            const thisWorldPosition = this.mesh.localToWorld(PRISM_CENTER.clone());
+            const otherWorldPosition = other.mesh.localToWorld(point.clone());
+            return thisWorldPosition.distanceTo(otherWorldPosition);
+        }
 
-        return intersection.bounding_box().diagonal().length() > 0.01
+        const otherToLocalCoordinates = (point) => {
+            return this.mesh.worldToLocal(other.mesh.localToWorld(point.clone()));
+        }
+
+        return getDistance(PRISM_CENTER) < EPSILON && otherToLocalCoordinates(FAR_POINT).distanceTo(new THREE.Vector3(0.5, 1, 0.5)) > EPSILON
     }
 } 

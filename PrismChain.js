@@ -49,16 +49,16 @@ export class PrismChain {
         const firstPrism = new Prism(colors[0]);
         
         this.prisms.push(firstPrism);
-        this.group.add(firstPrism.getMesh());
+        this.group.add(firstPrism.mesh);
         this.relativeRotations.push(new THREE.Euler(0, 0, 0));
         this.rotationShifts = new Array(numPrisms).fill(0);
 
         // Create and position remaining prisms in a line
         let previousPrism = firstPrism;
         for (let i = 1; i < numPrisms; i++) {
-            const prism = new Prism(colors[i % colors.length]);
-            previousPrism.getMesh().add(prism.getMesh());
-            prism.getMesh().position.set(-0.5,0.5,0);
+            const prism = new Prism(colors[i % colors.length], i);
+            previousPrism.mesh.add(prism.mesh);
+            prism.mesh.position.set(-0.5,0.5,0);
             this.relativeRotations.push(new THREE.Euler(Math.PI, 0, Math.PI/2));
             this.prisms.push(prism);
             previousPrism = prism;
@@ -109,7 +109,7 @@ export class PrismChain {
                 const prevPrism = this.prisms[index - 1];
                 const endPos = prevPrism.getEndPosition();
                 const endRot = prevPrism.getEndRotation();
-                prism.getMesh().position.copy(endPos);
+                prism.mesh.position.copy(endPos);
                 prism.setRotation(endRot.x, endRot.y, endRot.z);
             }
         });
@@ -153,8 +153,32 @@ export class PrismChain {
                 this.rotationShifts[index] = this.possibleRotations[Math.floor(Math.random() * this.possibleRotations.length)];
             }
         });
+
+        // this.rotationShifts = [
+        //     0,
+        //     1.5707963267948966,
+        //     1.5707963267948966,
+        //     1.5707963267948966,
+        //     -1.5707963267948966,
+        //     3.141592653589793,
+        //     3.141592653589793,
+        //     -1.5707963267948966,
+        //     0,
+        //     -1.5707963267948966
+        // ];
+
+        // this.rotationShifts = this.rotationShifts.map((_, index) => {
+        //     if (index === 4 || index === 5) {
+        //         return Math.PI;
+        //     }
+        //     return 0;
+        // });
+
+        console.log(this.rotationShifts);
         
         this.animate();
-        this.checkSelfIntersection();
+        setTimeout(() => {
+            this.checkSelfIntersection();
+        }, 500);
     }
 } 
