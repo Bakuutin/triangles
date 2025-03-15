@@ -17,9 +17,11 @@ const mouse = new THREE.Vector2();
 
 // Handle mouse click
 function onMouseClick(event) {
-    // Calculate mouse position in normalized device coordinates
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    if (event) {
+        // Calculate mouse position in normalized device coordinates
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
 
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
@@ -46,6 +48,15 @@ function onMouseClick(event) {
 // Add click event listener
 window.addEventListener('click', onMouseClick);
 
+window.addEventListener("touchstart", (event) => {
+    if (event.touches.length == 1) {
+      mouse.x = (event.touches[0].pageX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.touches[0].pageY / window.innerHeight) * 2 + 1;
+    }
+    onMouseClick();
+});
+
+
 const gui = new dat.GUI();
 
 const counter = {
@@ -59,7 +70,23 @@ const lenController = gui.add({chainLength: 10}, 'chainLength', 1, 50, 1);
 lenController.onChange((v) => spawnChain(v));
 lenController.name('Chain Length');
 
-gui.add({'info': ()=>null}, 'info').name('Press Space to randomize rotations')
+const randomizeRotations = () => {
+    window.prismChain.randomizeRotations();
+}
+
+
+document.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') {
+        randomizeRotations();
+    }
+});
+
+
+gui.add({'info': ()=>{
+    randomizeRotations();
+}}, 'info').name('Randomize rotations [Space]')
+
+
 
 const status = gui.add({status: ()=>null}, 'status');
 
@@ -187,13 +214,6 @@ class PrismChain {
         this.group = new THREE.Group();
         this.possibleRotations = [0, Math.PI, -Math.PI/2, Math.PI/2];
 
-        this.handleKeyDown = (event) => {
-            if (event.code === 'Space') {
-                this.randomizeRotations();
-            }
-        };
-
-        document.addEventListener('keydown', this.handleKeyDown);
 
         const colors = Array(numPrisms).fill().map((_, i) => {
             const hue = (i / numPrisms) * 360;
