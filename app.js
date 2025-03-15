@@ -12,7 +12,7 @@ THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 // Add raycaster for click detection
-const raycaster = new THREE.Raycaster();
+
 const mouse = new THREE.Vector2();
 
 // Handle mouse click
@@ -21,20 +21,26 @@ function onMouseClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    // Update the picking ray with the camera and mouse position
+    const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
 
-    // Get all meshes from the prism chain
-    const meshes = window.prismChain.prisms.map(prism => prism.mesh);
-    
-    // Perform intersection test
-    const intersects = raycaster.intersectObjects(meshes);
-    
-    if (intersects.length > 0) {
-        const clickedMesh = intersects[0].object;
-        const prismIndex = window.prismChain.prisms.findIndex(prism => prism.mesh === clickedMesh);
-        console.log('Clicked on prism index:', prismIndex);
+    for (let i = 0; i < window.prismChain.prisms.length; i++) {
+        window.prismChain.prisms[i].mesh.geometry.computeBoundsTree();
     }
+
+
+    // Perform intersection test
+    const intersects = raycaster.intersectObjects([window.prismChain.group]).filter(({face}) => !!face);
+
+    
+    if (intersects.length === 0) {
+        return;
+    }
+
+    const index = intersects[0].object.userData.index;
+
+    window.prismChain.rotationShifts[index] += Math.PI/2;
+    window.prismChain.animate();
 }
 
 // Add click event listener
@@ -133,6 +139,7 @@ class Prism {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.geometry.boundsTree = geometry.boundsTree;
+        this.mesh.userData.index = index;
 
         const edges = new THREE.EdgesGeometry(geometry);
         const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
@@ -215,6 +222,10 @@ class PrismChain {
         this.prisms.forEach((prism, index) => {
             prism.setRotation(this.relativeRotations[index].x+this.rotationShifts[index], this.relativeRotations[index].y, this.relativeRotations[index].z);
         });
+
+        setTimeout(() => {
+            this.checkSelfIntersection();
+        }, 500);
     }
 
     setPosition(x, y, z) {
@@ -288,9 +299,7 @@ class PrismChain {
 
         setStatus('...');
         this.animate();
-        setTimeout(() => {
-            this.checkSelfIntersection();
-        }, 500);
+        
         // - Do we sleep for 500 milliseconds?
         // - Yes
         // - Why do we sleep for 500 milliseconds?
@@ -319,6 +328,17 @@ const canvas = document.querySelector('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+// Add window resize handler
+window.addEventListener('resize', () => {
+    // Update camera
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    // Update renderer
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
