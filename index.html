@@ -4,24 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Triangles</title>
+    <title>lisoscope</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <canvas id="scene"></canvas>
+    <div id="root"></div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.skypack.dev/three@0.146.0/build/three.module",
-            "three/": "https://cdn.skypack.dev/three@0.146.0/",      
-            "dat.gui": "https://cdn.skypack.dev/dat.gui",
-            "three-mesh-bvh": "https://cdn.skypack.dev/three-mesh-bvh@0.5.23"
-        }
-    }
-    </script>
-    <script type="module" src="app.js"></script>
+    <!-- React CDN Links -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- React App -->
+    <script type="text/babel" src="app.js"></script>
 </body>
 
 </html>
