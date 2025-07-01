@@ -1,6 +1,26 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo, useRef } from "react";
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useRef, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import shapeData from "./shapes.js";
+
+// Add CSS for shake animation
+const shakeStyles = `
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-20px); }
+    20%, 40%, 60%, 80% { transform: translateX(20px); }
+  }
+  
+  .animate-shake {
+    animation: shake 0.6s ease-in-out;
+  }
+`;
+
+// Inject styles into document head
+if (typeof document !== 'undefined') {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = shakeStyles;
+    document.head.appendChild(styleElement);
+}
 
 const shapes = shapeData.map(group => {
     return () => (
@@ -16,6 +36,54 @@ const shapes = shapeData.map(group => {
 
 shapes.length
 
+// Define 3 words as subsets of letter indexes - now scrambled
+const WORDS = [
+    {
+        name: 'FLOW',
+        letterIndexes: [17, 2, 1, 6], 
+        solved: false
+    },
+    {
+        name: 'SURRENDER',
+        letterIndexes: [
+            0,
+            18,
+            22,
+            12,
+            14,
+            11,
+            21,
+            10,
+            7
+        ],
+        solved: false
+    },
+    {
+        name: 'DISCIPLINE',
+        letterIndexes: [
+            20,
+            8,
+            9,
+            4,
+            13,
+            19,
+            15,
+            3,
+            16,
+            5,
+        ],
+        solved: false
+    }
+];
+
+// Create a mapping from letter index to letter for each word
+const LETTER_MAPPINGS = {};
+WORDS.forEach(word => {
+    word.letterIndexes.forEach((index, i) => {
+        LETTER_MAPPINGS[index] = word.name[i];
+    });
+});
+
 const initialState = {
     letterColors: new Array(shapes.length).fill(0),
     globalColorIndex: 0,
@@ -24,14 +92,18 @@ const initialState = {
         "#3b82f6",
         "#10b981",
     ],
-    selectedLetters: new Set(),
-    selectionHistory: [new Set()],
+    selectedLetters: [], // Changed from Set to Array to maintain order
+    selectionHistory: [[]], // Changed from Set to Array
     historyIndex: 0,
     isPressed: false,
     currentPressId: null,
     lastTogglePressIds: {},
     isDragging: false,
     dragStartState: null,
+    // Word puzzle state
+    words: WORDS,
+    solvedLetters: new Set(), // Letters that are part of solved words
+    isShaking: false, // New state for shake animation
 };
 
 const ACTIONS = {
@@ -42,46 +114,50 @@ const ACTIONS = {
     UNDO: 'UNDO',
     START_DRAG: 'START_DRAG',
     END_DRAG: 'END_DRAG',
+    SOLVE_WORD: 'SOLVE_WORD',
+    SHAKE_SELECTION: 'SHAKE_SELECTION', // New action
+    RESET_SHAKE: 'RESET_SHAKE', // New action to reset shake state
 };
 
+// Pure reducer function - only handles state updates
 function reducer(state, action) {
     switch (action.type) {
         case ACTIONS.RESET:
-            const resetHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set()];
             return {
                 ...state,
-                selectedLetters: new Set(),
-                selectionHistory: resetHistory,
+                selectedLetters: [],
+                selectionHistory: [...state.selectionHistory.slice(0, state.historyIndex + 1), []],
                 historyIndex: state.historyIndex + 1,
                 isDragging: false,
                 dragStartState: null,
             };
-        case ACTIONS.TOGGLE_LETTER_SELECTION:
-            const newSelectedLetters = new Set(state.selectedLetters);
-            const letterIndex = action.payload.letterIndex;
-            const pressId = action.payload.pressId;
             
-            if (state.lastTogglePressIds[letterIndex] === pressId) {
+        case ACTIONS.TOGGLE_LETTER_SELECTION: {
+            const { letterIndex, pressId, newSelectedLetters, newLastTogglePressIds, shouldUpdate } = action.payload;
+            
+            if (!shouldUpdate) {
                 return state;
             }
             
-            if (newSelectedLetters.has(letterIndex)) {
-                newSelectedLetters.delete(letterIndex);
-            } else {
-                newSelectedLetters.add(letterIndex);
+            // Check if current selection matches any word
+            const matchedWord = action.payload.matchedWord;
+            if (matchedWord) {
+                const { updatedWords, newSolvedLetters } = action.payload.solveResult;
+                return {
+                    ...state,
+                    selectedLetters: [],
+                    words: updatedWords,
+                    solvedLetters: newSolvedLetters,
+                };
             }
-
-            const newLastTogglePressIds = { ...state.lastTogglePressIds };
-            newLastTogglePressIds[letterIndex] = pressId;
 
             // Only save to history if not dragging (single clicks)
             if (!state.isDragging) {
-                const toggleHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set(newSelectedLetters)];
                 return {
                     ...state,
                     selectedLetters: newSelectedLetters,
                     lastTogglePressIds: newLastTogglePressIds,
-                    selectionHistory: toggleHistory,
+                    selectionHistory: [...state.selectionHistory.slice(0, state.historyIndex + 1), [...newSelectedLetters]],
                     historyIndex: state.historyIndex + 1,
                 };
             } else {
@@ -92,45 +168,77 @@ function reducer(state, action) {
                     lastTogglePressIds: newLastTogglePressIds,
                 };
             }
+        }
+        
+        case ACTIONS.SOLVE_WORD: {
+            const { updatedWords, newSolvedLetters } = action.payload;
+            
+            return {
+                ...state,
+                words: updatedWords,
+                solvedLetters: newSolvedLetters,
+                selectedLetters: [],
+            };
+        }
+        
+        case ACTIONS.SHAKE_SELECTION: {
+            return {
+                ...state,
+                isShaking: true,
+                // Don't clear selectedLetters immediately - let the animation show first
+            };
+        }
+        
+        case ACTIONS.RESET_SHAKE: {
+            return {
+                ...state,
+                isShaking: false,
+                selectedLetters: [], // Clear selection after animation
+            };
+        }
+        
         case ACTIONS.SET_PRESSED:
             return {
                 ...state,
                 isPressed: true,
                 currentPressId: Math.random().toString(36).substr(2, 9),
             };
+            
         case ACTIONS.SET_UNPRESSED:
             return {
                 ...state,
                 isPressed: false,
             };
+            
         case ACTIONS.START_DRAG:
             return {
                 ...state,
                 isDragging: true,
-                dragStartState: new Set(state.selectedLetters),
+                dragStartState: [...state.selectedLetters],
             };
+            
         case ACTIONS.END_DRAG:
-            // Save the final state after drag ends
-            const dragHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set(state.selectedLetters)];
             return {
                 ...state,
                 isDragging: false,
                 dragStartState: null,
-                selectionHistory: dragHistory,
+                selectionHistory: [...state.selectionHistory.slice(0, state.historyIndex + 1), [...state.selectedLetters]],
                 historyIndex: state.historyIndex + 1,
             };
+            
         case ACTIONS.UNDO:
             if (state.historyIndex > 0) {
                 const newHistoryIndex = state.historyIndex - 1;
                 return {
                     ...state,
-                    selectedLetters: new Set(state.selectionHistory[newHistoryIndex]),
+                    selectedLetters: [...state.selectionHistory[newHistoryIndex]],
                     historyIndex: newHistoryIndex,
                     isDragging: false,
                     dragStartState: null,
                 };
             }
             return state;
+            
         default:
             return state;
     }
@@ -138,47 +246,233 @@ function reducer(state, action) {
 
 const AppContext = createContext();
 
+// Custom hook for word puzzle logic
+function useWordPuzzle() {
+    const checkWordMatch = useCallback((selectedLetters, words) => {
+        for (const word of words) {
+            if (!word.solved && selectedLetters.length === word.letterIndexes.length) {
+                // Convert selected letter indexes to their corresponding letters
+                const selectedLetterChars = selectedLetters.map(index => LETTER_MAPPINGS[index]);
+                
+                // Check if the selected letters can form the word (allowing same letters to be reordered)
+                const wordLetters = [...word.name.split('')]; // Create a copy to modify
+                const canFormWord = selectedLetterChars.every(selectedChar => {
+                    const index = wordLetters.indexOf(selectedChar);
+                    if (index !== -1) {
+                        wordLetters.splice(index, 1); // Remove the matched letter
+                        return true;
+                    }
+                    return false;
+                });
+                
+                if (canFormWord && wordLetters.length === 0) {
+                    return word;
+                }
+            }
+        }
+        return null;
+    }, []);
+
+    const solveWord = useCallback((word, words, solvedLetters) => {
+        const newSolvedLetters = new Set(solvedLetters);
+        word.letterIndexes.forEach(index => newSolvedLetters.add(index));
+        
+        const updatedWords = words.map(w => 
+            w.name === word.name ? { ...w, solved: true } : w
+        );
+        
+        return { updatedWords, newSolvedLetters };
+    }, []);
+
+    return { checkWordMatch, solveWord };
+}
+
+// Custom hook for letter selection logic
+function useLetterSelection() {
+    const toggleLetterSelection = useCallback((letterIndex, selectedLetters, solvedLetters, lastTogglePressIds, pressId) => {
+        // Don't allow selection of solved letters
+        if (solvedLetters.has(letterIndex)) {
+            return { shouldUpdate: false };
+        }
+        
+        // Prevent duplicate toggles from same press
+        if (lastTogglePressIds[letterIndex] === pressId) {
+            return { shouldUpdate: false };
+        }
+        
+        const newSelectedLetters = [...selectedLetters];
+        const existingIndex = newSelectedLetters.indexOf(letterIndex);
+        
+        if (existingIndex !== -1) {
+            // Remove letter if already selected
+            newSelectedLetters.splice(existingIndex, 1);
+        } else {
+            // Add letter to the end (maintaining order)
+            newSelectedLetters.push(letterIndex);
+        }
+
+        const newLastTogglePressIds = { ...lastTogglePressIds };
+        newLastTogglePressIds[letterIndex] = pressId;
+
+        return { 
+            shouldUpdate: true, 
+            newSelectedLetters, 
+            newLastTogglePressIds 
+        };
+    }, []);
+
+    return { toggleLetterSelection };
+}
+
 function AppProvider({ children }) {
     const [state, dispatch] = useReducer(reducer, initialState);
+    const { checkWordMatch, solveWord } = useWordPuzzle();
+    const { toggleLetterSelection } = useLetterSelection();
 
-    const randomizeAllColors = () => {
+    const randomizeAllColors = useCallback(() => {
         dispatch({ type: ACTIONS.RESET });
-    };
+    }, []);
 
-    const toggleLetterSelection = (letterIndex) => {
-        dispatch({ type: ACTIONS.TOGGLE_LETTER_SELECTION, payload: { letterIndex, pressId: state.currentPressId } });
-    };
+    const handleToggleLetterSelection = useCallback((letterIndex) => {
+        const toggleResult = toggleLetterSelection(
+            letterIndex, 
+            state.selectedLetters, 
+            state.solvedLetters, 
+            state.lastTogglePressIds, 
+            state.currentPressId
+        );
+        
+        if (!toggleResult.shouldUpdate) {
+            return;
+        }
+        
+        const { newSelectedLetters, newLastTogglePressIds } = toggleResult;
+        
+        // Check if current selection matches any word
+        const matchedWord = checkWordMatch(newSelectedLetters, state.words);
+        let solveResult = null;
+        
+        if (matchedWord) {
+            solveResult = solveWord(matchedWord, state.words, state.solvedLetters);
+        } else if (newSelectedLetters.length > 0) {
+            // Check if the current selection could potentially match any word
+            const couldMatchAnyWord = state.words.some(word => {
+                if (word.solved) return false;
+                
+                // Convert selected letter indexes to their corresponding letters
+                const selectedLetterChars = newSelectedLetters.map(index => LETTER_MAPPINGS[index]);
+                
+                // Check if the selected letters could form the beginning of any word
+                // by checking if we can match the first N letters of the word
+                const wordStart = word.name.split('').slice(0, selectedLetterChars.length);
+                
+                // Count letter frequencies in both the selected letters and the word start
+                const wordStartCounts = {};
+                wordStart.forEach(letter => {
+                    wordStartCounts[letter] = (wordStartCounts[letter] || 0) + 1;
+                });
+                
+                const selectedLetterCounts = {};
+                selectedLetterChars.forEach(letter => {
+                    selectedLetterCounts[letter] = (selectedLetterCounts[letter] || 0) + 1;
+                });
+                
+                // Check if we have the right letters to form the word start
+                return Object.keys(selectedLetterCounts).every(letter => {
+                    return (wordStartCounts[letter] || 0) >= selectedLetterCounts[letter];
+                }) && Object.keys(wordStartCounts).every(letter => {
+                    return (selectedLetterCounts[letter] || 0) >= wordStartCounts[letter];
+                });
+            });
+            
+            if (!couldMatchAnyWord) {
+                // Allow the selection first, then shake and deselect after delay
+                dispatch({ 
+                    type: ACTIONS.TOGGLE_LETTER_SELECTION, 
+                    payload: { 
+                        letterIndex, 
+                        pressId: state.currentPressId,
+                        newSelectedLetters,
+                        newLastTogglePressIds,
+                        shouldUpdate: toggleResult.shouldUpdate,
+                        matchedWord: null,
+                        solveResult: null
+                    } 
+                });
+                
+                // Trigger shake animation after a short delay
+                setTimeout(() => {
+                    dispatch({ type: ACTIONS.SHAKE_SELECTION });
+                    // Reset shake state and clear selection after animation
+                    setTimeout(() => {
+                        dispatch({ type: ACTIONS.RESET_SHAKE });
+                    }, 600); // Increased from 500ms to 600ms to ensure full animation
+                }, 300); // This ensures shake starts no earlier than 100ms after click
+                
+                return;
+            }
+        }
 
-    const setPressed = () => {
+        dispatch({ 
+            type: ACTIONS.TOGGLE_LETTER_SELECTION, 
+            payload: { 
+                letterIndex, 
+                pressId: state.currentPressId,
+                newSelectedLetters,
+                newLastTogglePressIds,
+                shouldUpdate: toggleResult.shouldUpdate,
+                matchedWord,
+                solveResult
+            } 
+        });
+    }, [state.selectedLetters, state.solvedLetters, state.lastTogglePressIds, state.currentPressId, state.words, toggleLetterSelection, checkWordMatch, solveWord]);
+
+    const setPressed = useCallback(() => {
         dispatch({ type: ACTIONS.SET_PRESSED });
-    };
+    }, []);
 
-    const setUnpressed = () => {
+    const setUnpressed = useCallback(() => {
         dispatch({ type: ACTIONS.SET_UNPRESSED });
-    };
+    }, []);
 
-    const undo = () => {
+    const undo = useCallback(() => {
         dispatch({ type: ACTIONS.UNDO });
-    };
+    }, []);
 
-    const startDrag = () => {
+    const startDrag = useCallback(() => {
         dispatch({ type: ACTIONS.START_DRAG });
-    };
+    }, []);
 
-    const endDrag = () => {
+    const endDrag = useCallback(() => {
         dispatch({ type: ACTIONS.END_DRAG });
-    };
+    }, []);
 
-    const value = {
+    const solveWordAction = useCallback((word) => {
+        const solveResult = solveWord(word, state.words, state.solvedLetters);
+        dispatch({ type: ACTIONS.SOLVE_WORD, payload: solveResult });
+    }, [state.words, state.solvedLetters, solveWord]);
+
+    const value = useMemo(() => ({
         ...state,
         randomizeAllColors,
-        toggleLetterSelection,
+        toggleLetterSelection: handleToggleLetterSelection,
         setPressed,
         setUnpressed,
         undo,
         startDrag,
         endDrag,
-    };
+        solveWord: solveWordAction,
+    }), [
+        state,
+        randomizeAllColors,
+        handleToggleLetterSelection,
+        setPressed,
+        setUnpressed,
+        undo,
+        startDrag,
+        endDrag,
+        solveWordAction
+    ]);
 
     return (
         <AppContext.Provider value={value}>
@@ -200,21 +494,51 @@ function Letter({ children, letterIndex }) {
         selectedLetters,
         toggleLetterSelection,
         isPressed,
+        solvedLetters,
+        words,
+        isShaking,
     } = useAppContext();
 
-    const isSelected = useMemo(() => selectedLetters.has(letterIndex), [selectedLetters, letterIndex]);
+    const isSelected = useMemo(() => selectedLetters.includes(letterIndex), [selectedLetters, letterIndex]);
+    const isSolved = useMemo(() => solvedLetters.has(letterIndex), [solvedLetters, letterIndex]);
 
     const handleClick = (event) => {
         event.stopPropagation();
         toggleLetterSelection(letterIndex);
     };
 
+    // Determine styling based on state
+    let fillColor = "blue";
+    let strokeColor = "none";
+    let strokeWidth = 0;
+    let opacity = 1;
+
+    if (isSolved) {
+        // Solved letters have colored outline and no fill
+        const solvedWord = words.find(word => word.letterIndexes.includes(letterIndex));
+        if (solvedWord) {
+            strokeColor = solvedWord.solved ? "white" : "blue";
+            strokeWidth = 15;
+            fillColor = "none";
+        }
+    } else if (isSelected) {
+        fillColor = "white";
+    }
+
+    // Apply shake animation to all selected letters when shaking
+    const shouldShake = isShaking && isSelected;
+
     return (
         <g
-            className="cursor-pointer"
+            className={`cursor-pointer ${shouldShake ? 'animate-shake' : ''}`}
             data-letter-index={letterIndex}
             onClick={handleClick}
-            style={{ fill: isSelected ? 'white': "blue" }}
+            style={{ 
+                fill: fillColor,
+                stroke: strokeColor,
+                strokeWidth: strokeWidth,
+                opacity: opacity
+            }}
         >
             {children}
         </g>
@@ -224,19 +548,21 @@ function Letter({ children, letterIndex }) {
 function ControlPanel() {
     const {
         randomizeAllColors,
+        words,
     } = useAppContext();
 
     return (
         <div className="absolute top-4 left-4 bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white max-w-xs">
-            <h3 className="text-lg font-semibold mb-3">Color Controls</h3>
-
-            <div className="flex flex-col gap-2">
-                <button
-                    onClick={randomizeAllColors}
-                    className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm"
-                >
-                    Reset
-                </button>
+            <div className="">
+                <h4 className="font-semibold mb-2">Words Found:</h4>
+                {words.map((word, index) => (
+                    <div key={word.name} className="flex items-center gap-2 text-sm">
+                        <span className={`w-3 h-3 rounded-full ${word.solved ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+                        <span className={word.solved ? 'line-through text-green-300' : 'text-gray-300'}>
+                            {word.solved ? word.name : '???'}
+                        </span>
+                    </div>
+                ))}
             </div>
         </div>
     );
