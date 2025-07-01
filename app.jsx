@@ -25,9 +25,13 @@ const initialState = {
         "#10b981",
     ],
     selectedLetters: new Set(),
+    selectionHistory: [new Set()],
+    historyIndex: 0,
     isPressed: false,
     currentPressId: null,
     lastTogglePressIds: {},
+    isDragging: false,
+    dragStartState: null,
 };
 
 const ACTIONS = {
@@ -35,14 +39,22 @@ const ACTIONS = {
     TOGGLE_LETTER_SELECTION: 'TOGGLE_LETTER_SELECTION',
     SET_PRESSED: 'SET_PRESSED',
     SET_UNPRESSED: 'SET_UNPRESSED',
+    UNDO: 'UNDO',
+    START_DRAG: 'START_DRAG',
+    END_DRAG: 'END_DRAG',
 };
 
 function reducer(state, action) {
     switch (action.type) {
         case ACTIONS.RESET:
+            const resetHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set()];
             return {
                 ...state,
                 selectedLetters: new Set(),
+                selectionHistory: resetHistory,
+                historyIndex: state.historyIndex + 1,
+                isDragging: false,
+                dragStartState: null,
             };
         case ACTIONS.TOGGLE_LETTER_SELECTION:
             const newSelectedLetters = new Set(state.selectedLetters);
@@ -62,11 +74,24 @@ function reducer(state, action) {
             const newLastTogglePressIds = { ...state.lastTogglePressIds };
             newLastTogglePressIds[letterIndex] = pressId;
 
-            return {
-                ...state,
-                selectedLetters: newSelectedLetters,
-                lastTogglePressIds: newLastTogglePressIds,
-            };
+            // Only save to history if not dragging (single clicks)
+            if (!state.isDragging) {
+                const toggleHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set(newSelectedLetters)];
+                return {
+                    ...state,
+                    selectedLetters: newSelectedLetters,
+                    lastTogglePressIds: newLastTogglePressIds,
+                    selectionHistory: toggleHistory,
+                    historyIndex: state.historyIndex + 1,
+                };
+            } else {
+                // During drag, just update the current state without saving to history
+                return {
+                    ...state,
+                    selectedLetters: newSelectedLetters,
+                    lastTogglePressIds: newLastTogglePressIds,
+                };
+            }
         case ACTIONS.SET_PRESSED:
             return {
                 ...state,
@@ -78,6 +103,34 @@ function reducer(state, action) {
                 ...state,
                 isPressed: false,
             };
+        case ACTIONS.START_DRAG:
+            return {
+                ...state,
+                isDragging: true,
+                dragStartState: new Set(state.selectedLetters),
+            };
+        case ACTIONS.END_DRAG:
+            // Save the final state after drag ends
+            const dragHistory = [...state.selectionHistory.slice(0, state.historyIndex + 1), new Set(state.selectedLetters)];
+            return {
+                ...state,
+                isDragging: false,
+                dragStartState: null,
+                selectionHistory: dragHistory,
+                historyIndex: state.historyIndex + 1,
+            };
+        case ACTIONS.UNDO:
+            if (state.historyIndex > 0) {
+                const newHistoryIndex = state.historyIndex - 1;
+                return {
+                    ...state,
+                    selectedLetters: new Set(state.selectionHistory[newHistoryIndex]),
+                    historyIndex: newHistoryIndex,
+                    isDragging: false,
+                    dragStartState: null,
+                };
+            }
+            return state;
         default:
             return state;
     }
@@ -104,12 +157,27 @@ function AppProvider({ children }) {
         dispatch({ type: ACTIONS.SET_UNPRESSED });
     };
 
+    const undo = () => {
+        dispatch({ type: ACTIONS.UNDO });
+    };
+
+    const startDrag = () => {
+        dispatch({ type: ACTIONS.START_DRAG });
+    };
+
+    const endDrag = () => {
+        dispatch({ type: ACTIONS.END_DRAG });
+    };
+
     const value = {
         ...state,
         randomizeAllColors,
         toggleLetterSelection,
         setPressed,
         setUnpressed,
+        undo,
+        startDrag,
+        endDrag,
     };
 
     return (
@@ -175,10 +243,24 @@ function ControlPanel() {
 }
 
 function AppContent() {
-    const { setPressed, toggleLetterSelection, setUnpressed } = useAppContext();
+    const { setPressed, toggleLetterSelection, setUnpressed, undo, startDrag, endDrag } = useAppContext();
     const svgRef = useRef(null);
     const lastMousePos = useRef(null);
-    const isDragging = useRef(false);
+
+    // Add keyboard event handling for undo
+    React.useEffect(() => {
+        const handleKeyDown = (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+                event.preventDefault();
+                undo();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [undo]);
 
     const isPointInLetter = (x, y) => {
         if (!svgRef.current) return -1;
@@ -301,7 +383,7 @@ function AppContent() {
     };
 
     const handleMouseMove = (event) => {
-        if (!isDragging.current || !lastMousePos.current) return;
+        if (!lastMousePos.current) return;
         
         const currentPos = { x: event.clientX, y: event.clientY };
         const lastPos = lastMousePos.current;
@@ -321,19 +403,19 @@ function AppContent() {
     React.useEffect(() => {
         const handleMouseDown = (event) => {
             setPressed();
-            isDragging.current = true;
+            startDrag();
             lastMousePos.current = { x: event.clientX, y: event.clientY };
         };
 
         const handleMouseUp = () => {
             setUnpressed();
-            isDragging.current = false;
+            endDrag();
             lastMousePos.current = null;
         };
 
         const handleTouchStart = (event) => {
             setPressed();
-            isDragging.current = true;
+            startDrag();
             if (event.touches[0]) {
                 lastMousePos.current = { 
                     x: event.touches[0].clientX, 
@@ -344,12 +426,12 @@ function AppContent() {
 
         const handleTouchEnd = () => {
             setUnpressed();
-            isDragging.current = false;
+            endDrag();
             lastMousePos.current = null;
         };
 
         const handleTouchMove = (event) => {
-            if (!isDragging.current || !lastMousePos.current) return;
+            if (!lastMousePos.current) return;
             
             const touch = event.touches[0];
             if (!touch) return;
