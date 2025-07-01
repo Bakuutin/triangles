@@ -3,6 +3,50 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Prevent default touch and mouse feedback behaviors */
+svg {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+svg * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Prevent default focus styles on SVG elements */
+svg:focus {
+    outline: none;
+}
+
+svg *:focus {
+    outline: none;
+}
+
+/* Prevent default active states that might cause color changes */
+svg *:active {
+    fill: inherit !important;
+    stroke: inherit !important;
 }
 
 body {
@@ -11,9 +55,9 @@ body {
         sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     min-height: 100vh;
-    color: #333;
+    color: #e0e0e0;
 }
 
 /* App container */
@@ -28,16 +72,17 @@ body {
     text-align: center;
     margin-bottom: 40px;
     padding: 40px 20px;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(26, 26, 46, 0.95);
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .app-header h1 {
     font-size: 3rem;
     margin-bottom: 10px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #64b5f6, #42a5f5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -45,7 +90,7 @@ body {
 
 .app-header p {
     font-size: 1.2rem;
-    color: #666;
+    color: #b0b0b0;
 }
 
 /* Main content */
@@ -59,26 +104,28 @@ body {
 .counter-section,
 .input-section,
 .features {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(26, 26, 46, 0.95);
     padding: 30px;
     border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .counter-section:hover,
 .input-section:hover,
 .features:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    border-color: rgba(100, 181, 246, 0.3);
 }
 
 .counter-section h2,
 .input-section h2,
 .features h2 {
     margin-bottom: 20px;
-    color: #333;
+    color: #e0e0e0;
     font-size: 1.5rem;
 }
 
@@ -96,18 +143,19 @@ body {
     height: 50px;
     border: none;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
+    background: linear-gradient(135deg, #64b5f6, #42a5f5);
+    color: #1a1a2e;
     font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(100, 181, 246, 0.3);
 }
 
 .counter button:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 20px rgba(100, 181, 246, 0.4);
+    background: linear-gradient(135deg, #42a5f5, #2196f3);
 }
 
 .counter button:active {
@@ -117,7 +165,7 @@ body {
 .count {
     font-size: 2rem;
     font-weight: bold;
-    color: #333;
+    color: #e0e0e0;
     min-width: 60px;
     text-align: center;
 }
@@ -126,21 +174,23 @@ body {
 .text-input {
     width: 100%;
     padding: 15px;
-    border: 2px solid #e1e5e9;
+    border: 2px solid #2d3748;
     border-radius: 10px;
     font-size: 1rem;
     transition: all 0.3s ease;
-    background: white;
+    background: #1a1a2e;
+    color: #e0e0e0;
 }
 
 .text-input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #64b5f6;
+    box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.1);
+    background: #16213e;
 }
 
 .text-input::placeholder {
-    color: #999;
+    color: #718096;
 }
 
 /* Features list */
@@ -151,8 +201,9 @@ body {
 
 .features li {
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #2d3748;
     font-size: 1rem;
+    color: #b0b0b0;
 }
 
 .features li:last-child {
@@ -218,24 +269,26 @@ body {
 
 /* SVG Gallery Styles */
 .svg-section {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(26, 26, 46, 0.95);
     padding: 30px;
     border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     animation: fadeInUp 0.6s ease forwards;
     animation-delay: 0.4s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .svg-section:hover {
     transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    border-color: rgba(100, 181, 246, 0.3);
 }
 
 .svg-section h2 {
     margin-bottom: 20px;
-    color: #333;
+    color: #e0e0e0;
     font-size: 1.5rem;
 }
 
@@ -251,20 +304,21 @@ body {
 }
 
 .svg-item {
-    background: white;
+    background: #16213e;
     border-radius: 10px;
     padding: 15px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     border: 2px solid transparent;
 }
 
 .svg-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: #64b5f6;
+    background: #1a1a2e;
 }
 
 .svg-thumbnail {
@@ -277,7 +331,7 @@ body {
 
 .svg-name {
     font-size: 0.8rem;
-    color: #666;
+    color: #b0b0b0;
     margin: 0;
     word-break: break-word;
 }
@@ -286,7 +340,7 @@ body {
     text-align: center;
     padding: 40px;
     font-size: 1.2rem;
-    color: #666;
+    color: #b0b0b0;
 }
 
 /* Modal Styles */
@@ -296,7 +350,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -305,14 +359,15 @@ body {
 }
 
 .svg-modal-content {
-    background: white;
+    background: #1a1a2e;
     border-radius: 15px;
     padding: 30px;
     max-width: 90%;
     max-height: 90%;
     overflow: auto;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .close-button {
@@ -323,17 +378,17 @@ body {
     border: none;
     font-size: 2rem;
     cursor: pointer;
-    color: #666;
+    color: #b0b0b0;
     transition: color 0.3s ease;
 }
 
 .close-button:hover {
-    color: #333;
+    color: #e0e0e0;
 }
 
 .svg-modal-content h3 {
     margin-bottom: 20px;
-    color: #333;
+    color: #e0e0e0;
     font-size: 1.3rem;
 }
 
@@ -341,7 +396,7 @@ body {
     max-width: 100%;
     height: auto;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive design for SVG gallery */
@@ -384,4 +439,127 @@ body {
     .svg-name {
         font-size: 0.7rem;
     }
+}
+
+/* Ensure SVG elements maintain their colors during interactions */
+g[style*="fill"] {
+    transition: none !important;
+}
+
+g[style*="fill"]:active,
+g[style*="fill"]:hover,
+g[style*="fill"]:focus {
+    fill: inherit !important;
+}
+
+/* Prevent any default browser styling on SVG paths */
+path {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+
+path:active,
+path:hover,
+path:focus {
+    fill: inherit !important;
+    stroke: inherit !important;
+}
+
+/* Specific rules for cursor-pointer elements */
+.cursor-pointer {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.cursor-pointer:active,
+.cursor-pointer:hover,
+.cursor-pointer:focus {
+    fill: inherit !important;
+    stroke: inherit !important;
+}
+
+/* Ensure SVG groups maintain their colors */
+g.cursor-pointer {
+    transition: none !important;
+}
+
+g.cursor-pointer:active,
+g.cursor-pointer:hover,
+g.cursor-pointer:focus {
+    fill: inherit !important;
+}
+
+/* Additional rules to prevent color changes during touch/mouse interactions */
+svg g {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+svg g:active,
+svg g:hover,
+svg g:focus {
+    fill: inherit !important;
+    stroke: inherit !important;
+}
+
+/* Prevent any default browser styling that might override our colors */
+svg g[style*="fill"] {
+    fill: inherit !important;
+}
+
+svg g[style*="fill"]:active,
+svg g[style*="fill"]:hover,
+svg g[style*="fill"]:focus {
+    fill: inherit !important;
+}
+
+/* Ensure paths within groups maintain their colors */
+svg g path {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+}
+
+svg g path:active,
+svg g path:hover,
+svg g path:focus {
+    fill: inherit !important;
+    stroke: inherit !important;
+}
+
+/* High specificity rules to prevent color changes */
+svg g[class*="cursor-pointer"] path {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+}
+
+svg g[class*="cursor-pointer"] path:active,
+svg g[class*="cursor-pointer"] path:hover,
+svg g[class*="cursor-pointer"] path:focus {
+    fill: inherit !important;
+    stroke: inherit !important;
+}
+
+/* Ensure style attributes are respected */
+svg g path[style*="fill"] {
+    fill: inherit !important;
+}
+
+svg g path[style*="fill"]:active,
+svg g path[style*="fill"]:hover,
+svg g path[style*="fill"]:focus {
+    fill: inherit !important;
+}
+
+/* Prevent any default browser touch feedback */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
 } 

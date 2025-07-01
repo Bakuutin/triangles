@@ -8,13 +8,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
     </style>
+    
 </head>
 
 <body>
@@ -24,19 +37,20 @@
     <script type="importmap">
     {
         "imports": {
-            "react": "https://esm.sh/react@18",
-            "react-dom/client": "https://esm.sh/react-dom@18/client",
-            "react-dom": "https://esm.sh/react-dom@18",
-            "paths": "./paths.jsx"
+            "react": "https://esm.sh/react@18.2.0?dev",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?dev",
+            "react-dom": "https://esm.sh/react-dom@18.2.0?dev",
+            "zustand": "https://esm.sh/zustand@4.4.7?dev",
+            "shapes": "./shapes.js"
         }
     }
     </script>
 
     <!-- Babel Standalone for JSX transformation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
 
     <!-- React App with JSX -->
-    <script type="text/babel" data-type="module" src="app.jsx"></script>
+    <script type="text/babel" data-type="module" data-presets="react" src="app.jsx"></script>
 </body>
 
 </html>
