@@ -301,13 +301,9 @@ function useLetterSelection() {
         }
         
         const newSelectedLetters = [...selectedLetters];
-        const existingIndex = newSelectedLetters.indexOf(letterIndex);
         
-        if (existingIndex !== -1) {
-            // Remove letter if already selected
-            newSelectedLetters.splice(existingIndex, 1);
-        } else {
-            // Add letter to the end (maintaining order)
+        // Only add letter if not already selected
+        if (!newSelectedLetters.includes(letterIndex)) {
             newSelectedLetters.push(letterIndex);
         }
 
